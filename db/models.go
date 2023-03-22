@@ -1,14 +1,14 @@
 package db
 
 type MergedEvent struct {
-	ID                 int
-	Recipient          string
-	Sender             string
-	ClaimedCoins       string
-	FundCommunityPool  string
-	SenderEvmosPrefix  string
+	ID                       int
+	Recipient                string
+	Sender                   string
+	ClaimedCoins             string
+	FundCommunityPool        string
+	SenderEvmosPrefix        string
 	SenderGenesisClaimRecord string
-	Height             int
+	Height                   int
 }
 
 type ClaimEvent struct {
