@@ -4,8 +4,6 @@ More info on the issue in this ticket [ticket](https://linear.app/evmos/issue/EN
 
 ## How it works
 
----
-
 - `collect-events`
     - Collects `claim` and `merge_claims_records` into a sqlite3 database through the following steps on every block within the specified range:
         - Creates `accounts.db` sqlite3 database
@@ -68,6 +66,7 @@ More info on the issue in this ticket [ticket](https://linear.app/evmos/issue/EN
         - `IBCAction` - Amount claimed through `IBCAction` claim type
         - `VoteAction` - Amount claimed through `VoteAction` claim type
         - `DelegateAction` - Amount claimed through `DelegateAction` claim type
+    - Note that `genesis.json` file needs to be downloaded first.
     - Results
         - A New `DecayAmount` table gets generated with the following model
 
