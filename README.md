@@ -84,3 +84,5 @@ More info on the issue in this ticket [ticket](https://linear.app/evmos/issue/EN
             	TotalLostEvmos         float64
             }
             ```
+- `sender-evmos-prefix`
+  - This script will basically populate the `SenderEvmosPrefix` column in `MergedEvent` table. This is because the sender on each `merge_claims_records` event is on `osmosis` denomination, we need to find the equivalent `evmos` address to be able to find its respective `initial_claimable_record` in genesis.
