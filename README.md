@@ -1,6 +1,60 @@
-This repo is trying to efficiently collect migrated and merged accounts that were affected by the decay bug.
+This repo tries to efficiently collect migrated and merged events over a specified block range.
 
-More info on the issue in this ticket [ticket](https://linear.app/evmos/issue/ENG-1509/early-decay-caused-loss-of-claimable-amount)
+## Results
+
+The collected data will be generated under an `account.db` sqlite3 database containing the following tables:
+
+```go
+type MergedEvent struct {
+	ID                 int
+	Recipient          string
+	Sender             string
+	ClaimedCoins       string
+	FundCommunityPool  string
+	SenderEvmosPrefix  string
+	SenderGenesisClaimRecord string
+	Height             int
+}
+
+type ClaimEvent struct {
+	ID     int
+	Sender string
+	Action string
+	Amount string
+	Height int
+}
+
+type DecayAmount struct {
+	ID                     int
+	Sender                 string
+	VoteAction             string
+	DelegateAction         string
+	EVMAction              string
+	IBCAction              string
+	TotalClaimed           string
+	TotalLost              string
+	InitialClaimableAmount string
+	TotalLostEvmos         float64
+}
+
+type Error struct {
+	ID         int
+	Height     int
+	EventType  string
+	TxIndex    string
+	EventIndex string
+}
+```
+
+## Instructions
+
+1. Run `go build` to install the binary
+2. Run `./decay-data collect-events FROM_BLOCK TO_BLOCK`  with the block range you want to collect the events from
+    - Note that this will take some time depending on the number of blocks that wants to be inspected
+3. Run `./decay-data collect-merge-senders`
+4. Run `./decay-data calculate-decay-loss`
+5. Run `./decay-data sender-evmos-prefix`
+6. New database `accounts.db` should be generated in the root directory.
 
 ## How it works
 
@@ -18,7 +72,7 @@ More info on the issue in this ticket [ticket](https://linear.app/evmos/issue/EN
             - End height of block range
     - Results
         - Generates a sqlite3 database, `accounts.db`
-        - There are three tables within the db with the following models
+        - There are three tables within the database with the following models
 
             ```go
             type MergedEvent struct {
@@ -66,7 +120,6 @@ More info on the issue in this ticket [ticket](https://linear.app/evmos/issue/EN
         - `IBCAction` - Amount claimed through `IBCAction` claim type
         - `VoteAction` - Amount claimed through `VoteAction` claim type
         - `DelegateAction` - Amount claimed through `DelegateAction` claim type
-    - Note that `genesis.json` file needs to be downloaded first.
     - Results
         - A New `DecayAmount` table gets generated with the following model
 
@@ -84,5 +137,6 @@ More info on the issue in this ticket [ticket](https://linear.app/evmos/issue/EN
             	TotalLostEvmos         float64
             }
             ```
+
 - `sender-evmos-prefix`
-  - This script will basically populate the `SenderEvmosPrefix` column in `MergedEvent` table. This is because the sender on each `merge_claims_records` event is on `osmosis` denomination, we need to find the equivalent `evmos` address to be able to find its respective `initial_claimable_record` in genesis.
+    - This script will basically populate the `SenderEvmosPrefix` column in `MergedEvent` table. This is because the sender on each `merge_claims_records` event is on `osmosis` denomination, we need to find the equivalent `evmos` address to be able to find its respective `initial_claimable_record` in genesis.
