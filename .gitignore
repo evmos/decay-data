@@ -1,0 +1,4 @@
+*.log
+accounts.db
+*.csv
+genesis.json
