@@ -92,6 +92,8 @@ func handleProcesses(ctx context.Context, db *sql.DB) error {
 
 		addressToChange, ok := decayAmounts[sender]
 		if ok {
+			// double claims are being overwritten for simplicity purposes.
+			// extra logic was performed on the analysis to cover this scenarios
 			doubleClaim := false
 			switch claimAction {
 			case "ACTION_VOTE":

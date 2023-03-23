@@ -182,6 +182,11 @@ func processBatchOfEvents(events []dblib.MergedEvent) []dblib.MergedEvent {
 	return queueOfEventsToUpdate
 }
 
+// findTxWithinBlockResultTxs finds the tx within the block result txs
+// - Iterates over all of the txs in the block
+// - It looks for the event type `merge_claims_records`
+// - It decodes the attributes
+// - It checks if the attributes match the event
 func findTxWithinBlockResultTxs(event dblib.MergedEvent, txs []query.ResponseDeliverTx) (tx query.ResponseDeliverTx, found bool) {
 	//  Iterate over all txs in the block
 	for i := range txs {
@@ -209,7 +214,10 @@ func findTxWithinBlockResultTxs(event dblib.MergedEvent, txs []query.ResponseDel
 }
 
 // findSenderWithinEvents find sender on recv_packet event
-// - Looks for recv_packet
+// - Looks for recv_packet event within the tx
+// - Decodes the packet data and gets the tx sender from it
+// NOTE: `merge_claims_records` is always triggered by an IBC transaction, hence we can
+// guarantee that the `recv_packet` event will be present
 func findSenderWithinEvents(tx query.ResponseDeliverTx) (sender string, found bool) {
 	// Iterate over all events in tx
 	for eventIndex := range tx.Events {

@@ -1,4 +1,4 @@
-This repo tries to efficiently collect migrated and merged events over a specified block range.
+This repo tries to collect migrated and merged events over a specified block range.
 
 ## Results
 
@@ -60,11 +60,11 @@ type Error struct {
 
 - `collect-events`
     - Collects `claim` and `merge_claims_records` into a sqlite3 database through the following steps on every block within the specified range:
-        - Creates `accounts.db` sqlite3 database
-        - Queries `BlockResults`
-        - Iterates over all of the Txs within the block
-        - If `Tx` emitted either `merge_claims_records` then it decodes the attributes of the event and stores the event in `merged_event` table
-        - If `Tx` emitted either `claim` then it decodes the attributes of the event and stored the event in `claim_event` table
+        1. Creates `accounts.db` sqlite3 database
+        2. Queries `BlockResults` of every block within range
+        3. For every `BlockResult` it iterates over all of the Txs within the block
+            - If `Tx` emitted either `merge_claims_records` then it decodes the attributes of the event and stores the event in `merged_event` table
+            - If `Tx` emitted either `claim` then it decodes the attributes of the event and stored the event in `claim_event` table
     - Required Params
         - `fromBlock`
             - Block height to start collecting events from
@@ -106,11 +106,13 @@ type Error struct {
 - `collect-merge-senders`
     - Because the `sender` of the transaction is not present on the `merge_claims_records` event, an extra step was necessary to collect the sender and track the claims properly. To accomplish this the following steps were followed:
         - Iterate over all the events on the `merged_event` table in `accounts.db`
-        - For every event, query `BlockResult`
+        - For every event, query `BlockResult` at event `height`
         - Find `Tx` within block
         - Find `recv_packet` event within `Tx`
         - Decode attributes of the event and add the `sender` to the row record within `MergeEvent` table
 - `calculate-decay-loss`
+    - The reason why this table was computed was to compared the results from those gather by a validator. This way we were able to validate the data from multiple sources.
+    - NOTE: Requires `genesis.json` file to be downloaded.
     - Using Evmos’s genesis file claims records and the acquired data on `claim_event`, calculate per address:
         - `TotalClaimed` - Total amount of `aevmos` claimed
         - `InitialClaimableAmount` - Claimable amount at genesis
@@ -140,4 +142,4 @@ type Error struct {
 
 - `sender-evmos-prefix`
     - This script will basically populate the `SenderEvmosPrefix` column in `MergedEvent` table. This is because the sender on each `merge_claims_records` event is on `osmosis` denomination, we need to find the equivalent `evmos` address to be able to find its respective `initial_claimable_record` in genesis.
-    - It also populates SenderGenesisClaimRecord column finding the information of the sender in the genesis file’s claim records.
+    - It also populates `SenderGenesisClaimRecord` column finding the information of the sender in the genesis file’s claim records.

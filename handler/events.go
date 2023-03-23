@@ -98,7 +98,7 @@ func handleWorkers(ctx context.Context, db *sql.DB, fromBlock, toBlock, batchSiz
 }
 
 func processBatchOfBlocks(ctx context.Context, db *sql.DB, job []int) ([]dblib.MergedEvent, []dblib.ClaimEvent) {
-	mergedEvents, migratedEvents := []dblib.MergedEvent{}, []dblib.ClaimEvent{}
+	mergedEvents, claimEvents := []dblib.MergedEvent{}, []dblib.ClaimEvent{}
 	for height := job[0]; height <= job[1]; height++ {
 		blockResult, err := query.GetBlockResult(strconv.Itoa(height), 0)
 		if err != nil {
@@ -112,16 +112,16 @@ func processBatchOfBlocks(ctx context.Context, db *sql.DB, job []int) ([]dblib.M
 			log.Printf("error querying external resource at height %v: %v", height, err)
 			continue
 		}
-		merged, migrated := filterAndDecodeEvents(blockResult.Result.TxsResults, height)
+		merged, claims := filterAndDecodeEvents(blockResult.Result.TxsResults, height)
 		mergedEvents = append(mergedEvents, merged...)
-		migratedEvents = append(migratedEvents, migrated...)
+		claimEvents = append(claimEvents, claims...)
 	}
 	log.Printf("finished job for blocks: %v - %v", job[0], job[1])
-	return mergedEvents, migratedEvents
+	return mergedEvents, claimEvents
 }
 
 func filterAndDecodeEvents(txs []query.ResponseDeliverTx, height int) ([]dblib.MergedEvent, []dblib.ClaimEvent) {
-	mergedEvents, migratedEvents := []dblib.MergedEvent{}, []dblib.ClaimEvent{}
+	mergedEvents, claimEvents := []dblib.MergedEvent{}, []dblib.ClaimEvent{}
 	//  Iterate over all txs in the block
 	for i := range txs {
 		// Iterate over all events in tx
@@ -137,13 +137,13 @@ func filterAndDecodeEvents(txs []query.ResponseDeliverTx, height int) ([]dblib.M
 					// return nil, nil
 					continue
 				}
-				mergeRecord := dblib.MergedEvent{
+				mergeEvent := dblib.MergedEvent{
 					Height:            height,
 					Recipient:         v.Attributes[0].Value,
 					ClaimedCoins:      v.Attributes[1].Value,
 					FundCommunityPool: v.Attributes[2].Value,
 				}
-				mergedEvents = append(mergedEvents, mergeRecord)
+				mergedEvents = append(mergedEvents, mergeEvent)
 				break
 			case "claim":
 				v := txs[i].Events[index]
@@ -155,7 +155,7 @@ func filterAndDecodeEvents(txs []query.ResponseDeliverTx, height int) ([]dblib.M
 					// return nil, nil
 					continue
 				}
-				migratedAccount := dblib.ClaimEvent{
+				claimEvent := dblib.ClaimEvent{
 					Height: height,
 					Sender: v.Attributes[0].Value,
 					Amount: v.Attributes[1].Value,
@@ -165,11 +165,11 @@ func filterAndDecodeEvents(txs []query.ResponseDeliverTx, height int) ([]dblib.M
 				// Decission was made to collect all claim data within decay block range
 				// instead of only merged / migrated accounts
 				// for context https://evmos.slack.com/archives/C022BMJSPQV/p1676632098959959
-				migratedEvents = append(migratedEvents, migratedAccount)
+				claimEvents = append(claimEvents, claimEvent)
 			}
 		}
 	}
-	return mergedEvents, migratedEvents
+	return mergedEvents, claimEvents
 }
 
 func insertErrIntoDB(ctx context.Context, db *sql.DB, error dblib.Error) error {
